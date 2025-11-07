@@ -50,6 +50,11 @@ function candyCrushGame() {
         squares.forEach(square => square.addEventListener("dragenter", dragEnter));
         squares.forEach(square => square.addEventListener("dragleave", dragLeave));
         squares.forEach(square => square.addEventListener("drop", dragDrop));
+        squares.forEach((sq) => {
+        sq.addEventListener("touchstart", touchStart, { passive: true });
+        sq.addEventListener("touchmove", touchMove, { passive: true });
+        sq.addEventListener("touchend", touchEnd, { passive: true });
+        });
     }
 
     // Drag and Drop Functions
@@ -99,6 +104,50 @@ function candyCrushGame() {
             // No drop occurred, revert to original
             squares[squareIdBeingDragged].style.backgroundImage = colorBeingDragged;
         }
+    }
+
+    let touchStartSquare = null;
+    let touchEndSquare = null;
+
+    function touchStart(e) {
+        e.preventDefault();
+        touchStartSquare = e.target;
+        colorBeingDragged = touchStartSquare.style.backgroundImage;
+        squareIdBeingDragged = parseInt(touchStartSquare.id);
+    }
+
+    function touchMove(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (element && element.id && element.parentElement.classList.contains("grid")) {
+        touchEndSquare = element;
+        }
+    }
+
+    function touchEnd(e) {
+        e.preventDefault();
+        if (!touchEndSquare) return;
+        colorBeingReplaced = touchEndSquare.style.backgroundImage;
+        squareIdBeingReplaced = parseInt(touchEndSquare.id);
+
+        const validMoves = [
+        squareIdBeingDragged - 1,
+        squareIdBeingDragged - width,
+        squareIdBeingDragged + 1,
+        squareIdBeingDragged + width,
+        ];
+        const validMove = validMoves.includes(squareIdBeingReplaced);
+
+        if (squareIdBeingReplaced && validMove) {
+        touchEndSquare.style.backgroundImage = colorBeingDragged;
+        squares[squareIdBeingDragged].style.backgroundImage = colorBeingReplaced;
+        } else {
+        squares[squareIdBeingDragged].style.backgroundImage = colorBeingDragged;
+        }
+
+        touchStartSquare = null;
+        touchEndSquare = null;
     }
 
     // Move Candies Down
