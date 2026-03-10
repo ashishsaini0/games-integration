@@ -4,22 +4,20 @@ import { CANDY_TYPES } from '../utils/generateLevels';
 const BOARD_SIZE = 8;
 const DRAG_THRESHOLD = 20;
 
-// Pre-computed shape SVGs — never recreated
-const SIZE = 28;
-const HALF = SIZE / 2;
-const FILL = 'rgba(255,255,255,0.3)';
-
-const SHAPE_SVGS = [
-  /* circle */   <svg key="c" width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} className="candy-shape"><circle cx={HALF} cy={HALF} r={HALF - 2} fill={FILL} /></svg>,
-  /* diamond */  <svg key="d" width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} className="candy-shape"><polygon points={`${HALF},2 ${SIZE - 2},${HALF} ${HALF},${SIZE - 2} 2,${HALF}`} fill={FILL} /></svg>,
-  /* square */   <svg key="s" width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} className="candy-shape"><rect x="4" y="4" width={SIZE - 8} height={SIZE - 8} rx="3" fill={FILL} /></svg>,
-  /* triangle */ <svg key="t" width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} className="candy-shape"><polygon points={`${HALF},3 ${SIZE - 3},${SIZE - 3} 3,${SIZE - 3}`} fill={FILL} /></svg>,
-  /* star */     <svg key="st" width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} className="candy-shape"><polygon points={`${HALF},2 ${HALF + 4},${HALF - 4} ${SIZE - 2},${HALF - 3} ${HALF + 6},${HALF + 3} ${HALF + 4},${SIZE - 2} ${HALF},${HALF + 5} ${HALF - 4},${SIZE - 2} ${HALF - 6},${HALF + 3} 2,${HALF - 3} ${HALF - 4},${HALF - 4}`} fill={FILL} /></svg>,
-  /* hexagon */  <svg key="h" width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} className="candy-shape"><polygon points={`${HALF},2 ${SIZE - 3},${HALF / 2 + 1} ${SIZE - 3},${HALF + HALF / 2 - 1} ${HALF},${SIZE - 2} 3,${HALF + HALF / 2 - 1} 3,${HALF / 2 + 1}`} fill={FILL} /></svg>,
+// Realistic candy emoji icons — easily distinguishable for all ages
+const CANDY_EMOJIS = [
+  '\u{1F352}', // 🍒 Cherry (red)
+  '\u{1F36C}', // 🍬 Candy (teal)
+  '\u{1FAD0}', // 🫐 Blueberry (blue)
+  '\u{1F34F}', // 🍏 Green Apple (green)
+  '\u{1F34B}', // 🍋 Lemon (yellow)
+  '\u{1F347}', // 🍇 Grape (purple)
 ];
 
-// Pre-built color style objects so we don't allocate inline on every render
-const COLOR_STYLES = CANDY_TYPES.map((c) => ({ backgroundColor: c.color }));
+// Pre-built color style objects with richer gradients for a 3D candy look
+const COLOR_STYLES = CANDY_TYPES.map((c) => ({
+  background: `radial-gradient(circle at 35% 35%, ${c.color}ee, ${c.color}bb 50%, ${c.color}88 100%)`,
+}));
 
 const EMPTY_CELL = <div className="candy-cell empty" />;
 
@@ -112,7 +110,7 @@ function Candy({
       style={cellStyle}
     >
       <div className="candy-inner" style={COLOR_STYLES[type]}>
-        {SHAPE_SVGS[type % SHAPE_SVGS.length]}
+        <span className="candy-emoji">{CANDY_EMOJIS[type % CANDY_EMOJIS.length]}</span>
         <div className="candy-shine" />
       </div>
     </div>
