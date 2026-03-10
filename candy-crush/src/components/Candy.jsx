@@ -26,6 +26,7 @@ function Candy({
   row,
   col,
   fallDistance,
+  special,
   isSelected,
   isAnimating,
   isShaking,
@@ -95,6 +96,8 @@ function Candy({
   if (isAnimating) cellClass += ' match-pop';
   if (isShaking) cellClass += ' shake';
   if (fallDistance > 0) cellClass += ' falling';
+  if (special) cellClass += ' special-candy';
+  if (special === 'super-lightning') cellClass += ' super-lightning';
 
   const cellStyle = fallDistance > 0
     ? { touchAction: 'none', '--fall': fallDistance }
@@ -112,6 +115,7 @@ function Candy({
       <div className="candy-inner" style={COLOR_STYLES[type]}>
         <span className="candy-emoji">{CANDY_EMOJIS[type % CANDY_EMOJIS.length]}</span>
         <div className="candy-shine" />
+        {special && <div className="lightning-icon">{special === 'super-lightning' ? '\u26A1' : '\u{1F329}'}</div>}
       </div>
     </div>
   );

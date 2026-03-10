@@ -118,5 +118,45 @@ export function useSound(enabled = true) {
     } catch { /* silent fail */ }
   }, [getCtx]);
 
-  return { playSwap, playMatch, playLevelComplete, playFail };
+  const playLightning = useCallback(() => {
+    if (!enabledRef.current) return;
+    try {
+      const ctx = getCtx();
+      const now = ctx.currentTime;
+
+      // Electric crackle — filtered noise burst
+      const dur = 0.25;
+      const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        const t = i / data.length;
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 1.5) * (Math.sin(t * 80) > 0 ? 1 : 0.3);
+      }
+      const noiseSrc = ctx.createBufferSource();
+      noiseSrc.buffer = buf;
+      const hp = ctx.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.value = 3000;
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.18, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+      noiseSrc.connect(hp).connect(noiseGain).connect(ctx.destination);
+      noiseSrc.start(now);
+
+      // Electric zap — rising then falling pitch
+      const osc = ctx.createOscillator();
+      const oscGain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(200, now);
+      osc.frequency.exponentialRampToValueAtTime(2400, now + 0.06);
+      osc.frequency.exponentialRampToValueAtTime(600, now + 0.2);
+      oscGain.gain.setValueAtTime(0.1, now);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      osc.connect(oscGain).connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.25);
+    } catch { /* silent fail */ }
+  }, [getCtx]);
+
+  return { playSwap, playMatch, playLevelComplete, playFail, playLightning };
 }
