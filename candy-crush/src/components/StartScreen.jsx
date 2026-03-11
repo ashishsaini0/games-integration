@@ -4,7 +4,7 @@ function StartScreen({ totalScore, highestLevel, onPlay, onLevelSelect }) {
   return (
     <div className="start-screen">
       <div className="start-card">
-        <h1 className="start-title">FRUIT CRUSH</h1>
+        <h1 className="start-title">CANDY CRUSH</h1>
         <div className="start-stats">
           {highestLevel > 0 && (
             <>

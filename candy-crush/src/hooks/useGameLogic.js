@@ -11,9 +11,8 @@ function cloneBoard(board) {
 
 /**
  * Find all matches of 3+. Returns an array of encoded positions (row * 8 + col).
- * Also populates matchGroups with info about each individual match for power-up creation.
  */
-function findMatches(board, matchGroups) {
+function findMatches(board) {
   const matched = [];
   const seen = new Uint8Array(64);
 
@@ -28,17 +27,9 @@ function findMatches(board, matchGroups) {
           board[row][col + 2]?.type === t) {
         let end = col + 2;
         while (end + 1 < BOARD_SIZE && board[row][end + 1]?.type === t) end++;
-        const len = end - col + 1;
-        const group = [];
         for (let c = col; c <= end; c++) {
           const idx = row * BOARD_SIZE + c;
-          group.push(idx);
           if (!seen[idx]) { seen[idx] = 1; matched.push(idx); }
-        }
-        if (matchGroups && len >= 4) {
-          // Center of the match is where the special candy spawns
-          const centerCol = col + Math.floor(len / 2);
-          matchGroups.push({ positions: group, length: len, type: t, direction: 'horizontal', centerRow: row, centerCol });
         }
       }
 
@@ -47,16 +38,9 @@ function findMatches(board, matchGroups) {
           board[row + 2]?.[col]?.type === t) {
         let end = row + 2;
         while (end + 1 < BOARD_SIZE && board[end + 1]?.[col]?.type === t) end++;
-        const len = end - row + 1;
-        const group = [];
         for (let r = row; r <= end; r++) {
           const idx = r * BOARD_SIZE + col;
-          group.push(idx);
           if (!seen[idx]) { seen[idx] = 1; matched.push(idx); }
-        }
-        if (matchGroups && len >= 4) {
-          const centerRow = row + Math.floor(len / 2);
-          matchGroups.push({ positions: group, length: len, type: t, direction: 'vertical', centerRow, centerCol: col });
         }
       }
     }
@@ -65,95 +49,16 @@ function findMatches(board, matchGroups) {
   return matched;
 }
 
-/**
- * Collect all cells destroyed by a lightning candy at (row, col).
- * 'lightning' clears the row or column (based on match direction).
- * 'super-lightning' clears both the row and column (cross pattern).
- */
-function getLightningTargets(board, row, col, special) {
-  const targets = new Set();
-  if (special === 'lightning-h' || special === 'super-lightning') {
-    for (let c = 0; c < BOARD_SIZE; c++) {
-      if (board[row][c]) targets.add(row * BOARD_SIZE + c);
-    }
-  }
-  if (special === 'lightning-v' || special === 'super-lightning') {
-    for (let r = 0; r < BOARD_SIZE; r++) {
-      if (board[r][col]) targets.add(r * BOARD_SIZE + col);
-    }
-  }
-  return targets;
-}
-
-function removeMatches(board, matched, matchGroups, lightningCells) {
+function removeMatches(board, matched) {
   let score = 0;
-
-  // First, check if any matched candy is a special candy — trigger its power
-  const extraTargets = new Set();
   for (let i = 0; i < matched.length; i++) {
     const idx = matched[i];
-    const r = (idx / BOARD_SIZE) | 0;
-    const c = idx % BOARD_SIZE;
-    const candy = board[r][c];
-    if (candy?.special) {
-      const targets = getLightningTargets(board, r, c, candy.special);
-      for (const t of targets) extraTargets.add(t);
-      if (lightningCells) {
-        lightningCells.push({ row: r, col: c, special: candy.special });
-      }
-    }
+    board[(idx / BOARD_SIZE) | 0][idx % BOARD_SIZE] = null;
+    score += 10;
   }
-
-  // Merge extra targets into matched set
-  const allTargets = new Set(matched);
-  for (const t of extraTargets) allTargets.add(t);
-
-  // Check if chain-triggered specials exist in extra targets
-  for (const idx of extraTargets) {
-    const r = (idx / BOARD_SIZE) | 0;
-    const c = idx % BOARD_SIZE;
-    const candy = board[r][c];
-    if (candy?.special && !matched.includes(idx)) {
-      const targets = getLightningTargets(board, r, c, candy.special);
-      for (const t of targets) allTargets.add(t);
-      if (lightningCells) {
-        lightningCells.push({ row: r, col: c, special: candy.special });
-      }
-    }
+  if (matched.length > 3) {
+    score += (matched.length - 3) * 15;
   }
-
-  // Remove all targeted cells
-  for (const idx of allTargets) {
-    const r = (idx / BOARD_SIZE) | 0;
-    const c = idx % BOARD_SIZE;
-    if (board[r][c]) {
-      board[r][c] = null;
-      score += 10;
-    }
-  }
-  if (allTargets.size > 3) {
-    score += (allTargets.size - 3) * 15;
-  }
-
-  // Create special candies from 4+ / 5+ match groups
-  if (matchGroups) {
-    for (const group of matchGroups) {
-      const { length, type, direction, centerRow, centerCol } = group;
-      // Only create if the center cell was cleared (it should be)
-      if (board[centerRow][centerCol] === null) {
-        let special;
-        if (length >= 5) {
-          special = 'super-lightning';
-        } else if (length === 4) {
-          special = direction === 'horizontal' ? 'lightning-v' : 'lightning-h';
-        }
-        if (special) {
-          board[centerRow][centerCol] = createCandy(type, centerRow, centerCol, special);
-        }
-      }
-    }
-  }
-
   return score;
 }
 
@@ -242,7 +147,6 @@ export function useGameLogic(levels, callbacks = {}, startLevel = 0) {
   const [selectedCandy, setSelectedCandy] = useState(null);
   const [animatingCells, setAnimatingCells] = useState(EMPTY_SET);
   const [shakeCell, setShakeCell] = useState(null);
-  const [lightningEffect, setLightningEffect] = useState(null);
   const [paused, setPaused] = useState(false);
   const isProcessing = useRef(false);
   const candyTypesRef = useRef([0, 1, 2, 3]);
@@ -293,13 +197,11 @@ export function useGameLogic(levels, callbacks = {}, startLevel = 0) {
 
   const processCascade = useCallback(
     (currentBoard, runningScore, currentMovesLeft) => {
-      const matchGroups = [];
-      const matched = findMatches(currentBoard, matchGroups);
+      const matched = findMatches(currentBoard);
 
       if (matched.length === 0) {
         isProcessing.current = false;
         setAnimatingCells(EMPTY_SET);
-        setLightningEffect(null);
 
         if (!hasValidMoves(currentBoard)) {
           const freshBoard = generateRandomBoard(candyTypesRef.current);
@@ -313,20 +215,12 @@ export function useGameLogic(levels, callbacks = {}, startLevel = 0) {
 
       addTimer(() => {
         const newBoard = cloneBoard(currentBoard);
-        const lightningCells = [];
-        const gained = removeMatches(newBoard, matched, matchGroups, lightningCells);
+        const gained = removeMatches(newBoard, matched);
         const newScore = runningScore + gained;
         setScore(newScore);
         setTotalScore((prev) => prev + gained);
 
-        // Show lightning effect if any special candies were triggered
-        if (lightningCells.length > 0) {
-          setLightningEffect(lightningCells);
-          cbRef.current.onLightning?.();
-        }
-
         addTimer(() => {
-          setLightningEffect(null);
           applyGravity(newBoard);
           spawnCandies(newBoard, candyTypesRef.current);
           setBoard(cloneBoard(newBoard));
@@ -349,7 +243,7 @@ export function useGameLogic(levels, callbacks = {}, startLevel = 0) {
           addTimer(() => {
             cascadeRef.current(newBoard, newScore, currentMovesLeft);
           }, 180);
-        }, 300);
+        }, 180);
       }, 260);
     },
     [levels, currentLevel, addTimer]
@@ -381,7 +275,7 @@ export function useGameLogic(levels, callbacks = {}, startLevel = 0) {
         newBoard[row2][col2].col = col2;
       }
 
-      const matched = findMatches(newBoard, null);
+      const matched = findMatches(newBoard);
       if (matched.length === 0) {
         setShakeCell({ row: row1, col: col1 });
         addTimer(() => setShakeCell(null), 380);
@@ -461,7 +355,6 @@ export function useGameLogic(levels, callbacks = {}, startLevel = 0) {
     selectedCandy,
     animatingCells,
     shakeCell,
-    lightningEffect,
     paused,
     targetScore: levels?.[currentLevel]?.targetScore ?? 0,
     handleCandyClick,

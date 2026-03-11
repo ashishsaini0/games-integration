@@ -12,8 +12,8 @@ const BOARD_SIZE = 8;
 
 let nextCandyId = 1;
 
-export function createCandy(type, row, col, special = null) {
-  return { id: nextCandyId++, type, row, col, special };
+export function createCandy(type, row, col) {
+  return { id: nextCandyId++, type, row, col };
 }
 
 function seededRandom(seed) {

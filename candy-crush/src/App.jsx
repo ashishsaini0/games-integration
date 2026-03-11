@@ -19,7 +19,7 @@ export default function App() {
     soundEnabled, completeLevel, toggleSound,
   } = useStorage();
 
-  const { playSwap, playMatch, playLevelComplete, playFail, playLightning } = useSound(soundEnabled);
+  const { playSwap, playMatch, playLevelComplete, playFail } = useSound(soundEnabled);
 
   const onLevelComplete = useCallback(() => {
     playLevelComplete();
@@ -35,14 +35,13 @@ export default function App() {
       onMatch: playMatch,
       onLevelComplete,
       onFail,
-      onLightning: playLightning,
     }),
-    [playSwap, playMatch, onLevelComplete, onFail, playLightning]
+    [playSwap, playMatch, onLevelComplete, onFail]
   );
 
   const {
     board, score, movesLeft, gameState, currentLevel,
-    selectedCandy, animatingCells, shakeCell, lightningEffect, paused, targetScore,
+    selectedCandy, animatingCells, shakeCell, paused, targetScore,
     handleCandyClick, handleDragSwap, nextLevel, retryLevel,
     goToLevel, togglePause,
   } = useGameLogic(levels, soundCallbacks, startLevel);
@@ -118,7 +117,7 @@ export default function App() {
         <button className="btn-icon" onClick={handleBackToStart} title="Menu">
           &#9776;
         </button>
-        <h1 className="game-title">FRUIT CRUSH</h1>
+        <h1 className="game-title">CANDY CRUSH</h1>
         <button className="btn-icon" onClick={togglePause} title={paused ? 'Resume' : 'Pause'}>
           {paused ? '\u25B6' : '\u2759\u2759'}
         </button>
@@ -143,7 +142,6 @@ export default function App() {
         selectedCandy={selectedCandy}
         animatingCells={animatingCells}
         shakeCell={shakeCell}
-        lightningEffect={lightningEffect}
         onCandyClick={handleCandyClick}
         onDragSwap={handleDragSwap}
       />
