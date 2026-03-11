@@ -19,7 +19,9 @@ const COLOR_STYLES = CANDY_TYPES.map((c) => ({
   background: `radial-gradient(circle at 35% 35%, ${c.color}ee, ${c.color}bb 50%, ${c.color}88 100%)`,
 }));
 
-const EMPTY_CELL = <div className="candy-cell empty" />;
+function EmptyCell() {
+  return <div className="candy-cell empty" />;
+}
 
 function Candy({
   type,
@@ -89,7 +91,7 @@ function Candy({
     }
   });
 
-  if (type === null || type === undefined) return EMPTY_CELL;
+  if (type === null || type === undefined) return <EmptyCell />;
 
   let cellClass = 'candy-cell';
   if (isSelected) cellClass += ' selected';
